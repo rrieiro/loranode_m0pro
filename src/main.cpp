@@ -27,8 +27,11 @@ DHT dht(8, DHT22);
 String loraReturn;
 float temp;
 float humid;
-uint32_t timer = 0;
+unsigned long timer = 0;
 bool initialized = false;
+const int buffersz = 64;
+char strBuffer[buffersz];
+const char termChar = '\n'; 
 
 // Funtion prototypes
 void printInitInfo();
@@ -55,35 +58,37 @@ void setup() {
 }
 
 void loop() {
+WRITE("*************************\n");
+WRITE("* Loop Started          *\n");
+WRITE("*************************\n");
 
-  // Check if is time to get and transmit DHT values
-  if (millis() - timer >= DHT_PERIOD) {
-    // Get DHT sensor values
-    if (getDHTValues() == true) {
-      // Create payload and transmitt
-      txDHTValues();
-    }
-    timer = millis();  
-  }
+//millis do not compute time during sleep
+unsigned long now = millis();
+timer = now; // loop start time
 
-  // System period cycle
-  //delay(SYSTEM_PERIOD);
+// Get DHT sensor values
+if (getDHTValues() == true) {
+  // Create payload and transmit
+  txDHTValues();
+}
 
-
-  PRINTLN(">>> Entering Sleep in 10 seconds");
-  delay(10000);
-  PRINTLN(">>> Entering Sleep now, for ? seconds");
-  //LowPower.idle(5000);
-  //LowPower.standby();
-  //LowPower.idle(IDLE_0);
-  //LowPower.idle(IDLE_1);
-  //LowPower.idle(IDLE_2);
-  //int sleepMS = Watchdog.sleep(10000);
-  int sleepMS = Watchdog.sleep();
-
+now = millis();
+unsigned long McAwakeTime = now - timer;
+WRITE("Microcontroller awake time: ");
+SerialUSB.print(McAwakeTime); //4014ms
+WRITE(" mS\n");
+long sleepTime = (unsigned long)DHT_PERIOD - McAwakeTime;
+while (sleepTime > 0) {
+  WRITE("Will sleep for ");
+  PRINT(sleepTime, DEC);
+  WRITE(" milliseconds.\n");
+  int sleepMS = Watchdog.sleep(sleepTime);
+  sleepTime = sleepTime - sleepMS;
   WRITE("I'm awake now! I slept for ");
   PRINT(sleepMS, DEC);
   WRITE(" milliseconds.\n");
+
+}
 
 }
 
@@ -398,19 +403,34 @@ boolean txDHTValues() {
   at_cmd.concat(lora_port_dht);
   Serial1.println(at_cmd);
   //delay(300);  
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
-
+//  loraReturn = Serial1.readString();
+//  PRINTLN(loraReturn);
+  memset(strBuffer, 0, buffersz);
+  Serial1.readBytesUntil(termChar, strBuffer, buffersz);
+  PRINTLN(strBuffer);
+  
   // Sending data via RHF76-052 LoRa modem
   PRINTLN("\nSending unconfirmed data via LoRa...");
   at_cmd = "AT+MSGHEX=\"";
   at_cmd.concat(payload);  
   at_cmd.concat("\"");
-  PRINTLN(at_cmd);
+  //PRINTLN(at_cmd);
   Serial1.println(at_cmd);
-//  delay(5000);  
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
+//  delay(5000);
+  Serial1.setTimeout(5000);  
+  //loraReturn = Serial1.readString();
+  //PRINTLN(loraReturn);
+  memset(strBuffer, 0, buffersz);
+  Serial1.readBytesUntil(termChar, strBuffer, buffersz);
+  PRINTLN(strBuffer);
+  memset(strBuffer, 0, buffersz);
+  Serial1.readBytesUntil(termChar, strBuffer, buffersz);
+  PRINTLN(strBuffer);
+  memset(strBuffer, 0, buffersz);
+  Serial1.readBytesUntil(termChar, strBuffer, buffersz);
+  PRINTLN(strBuffer);
+  
+  
   return true;
 }
 
@@ -426,3 +446,15 @@ void serialEvent1() {
   }
 }
 */
+
+void serialEvent() {
+  PRINTLN(">>>>>>>>>>Serial Event\n");
+}
+
+void serialEvent1() {
+  PRINTLN(">>>>>>>>>>Serial Event 1 \n");
+}
+
+void serialEvent2() {
+  PRINTLN(">>>>>>>>>>Serial Event 2 \n");
+}
