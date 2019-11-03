@@ -6,6 +6,7 @@
 
 
 #define DEBUGINFO 1
+#define PRINTTIME 1
 
 #define PRINTERROR(...) SerialUSB.println(__VA_ARGS__)
 
@@ -54,18 +55,30 @@ void setup() {
 }
 
 void loop() {
-WRITE("*************************\n");
-WRITE("* Loop Started          *\n");
-WRITE("*************************\n");
 
 //millis do not compute time during sleep
 unsigned long now = millis();
 timer = now; // loop start time
+WRITE("*************************\n");
+WRITE("* Loop Started          *\n");
+WRITE("*************************\n");
 
 // Get DHT sensor values
 if (getDHTValues() == true) {
+  #ifdef PRINTTIME
+  now = millis();
+  SerialUSB.print("Data aquired time : ");
+  SerialUSB.println(now - timer);
+  #endif
+
   // Create payload and transmit
   txDHTValues();
+  #ifdef PRINTTIME
+  now = millis();
+  SerialUSB.print("Data transmitted time : ");
+  SerialUSB.println(now - timer);
+  #endif
+
 }
 
 //LoRa sleep mode 
@@ -73,13 +86,13 @@ PRINTLN(">>> Set LoRa transceiver to sleep");
 Serial1.println("AT+LOWPOWER");
 readCString();
 
-
-
 now = millis();
 unsigned long McAwakeTime = now - timer;
-WRITE("Microcontroller awake time: ");
-SerialUSB.print(McAwakeTime); //3150ms
-WRITE(" mS\n");
+#ifdef PRINTTIME
+SerialUSB.print("Microcontroller awake time: ");
+SerialUSB.println(McAwakeTime); //3150ms
+#endif
+
 long sleepTime = (unsigned long)DHT_PERIOD - McAwakeTime;
 while (sleepTime > 0) {
   WRITE("Will sleep for ");
@@ -123,7 +136,10 @@ void printInitInfo() {
  */
 boolean initLoRa() {
 
+  #ifdef PRINTTIME
   unsigned long initStart = millis();
+  #endif
+
   String at_cmd;
   char * b;
 
@@ -304,10 +320,11 @@ boolean initLoRa() {
     readCString();
   }
 
+  #ifdef PRINTTIME
   unsigned long initEnd = millis();
-  WRITE("Lora initialization took : ");
-  PRINTLN(initEnd-initStart);
-  WRITE(" mS\n");
+  SerialUSB.print("Lora initialization took : ");
+  SerialUSB.println(initEnd-initStart);
+  #endif
 
   return true;
 }
@@ -325,7 +342,7 @@ boolean getDHTValues() {
   WRITE(" %");
   WRITE("\n\tTemperature: ");
   PRINT(temp);
-  WRITE(" oC");
+  WRITE(" oC\n");
   if ((temp != NAN) && (humid != NAN)) {
     return true;
   } else {
@@ -366,6 +383,21 @@ boolean txDHTValues() {
   PRINTLN("\n Wake up LoRa if in sleep mode...");
   Serial1.println("AT");
   readCString();
+
+/*
+  // Get ID parameters of RHF76-052 LoRa modem
+  PRINTLN(">>> Getting DevAddr, DevEui and AppEui...");
+  Serial1.println("AT+ID");
+  readCString();
+  readCString();
+  readCString();
+
+  // Get DR scheme
+  PRINTLN(">>> Getting DR schemme...");
+  Serial1.println("AT+DR=?");
+  readCString();
+  readCString();
+*/
 
   // Set LoRa port communication
   PRINTLN("\nSetting LoRa port...");
