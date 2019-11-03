@@ -2,9 +2,6 @@
 #include <setup.h>
 #include <util.h>
 #include <DHT_U.h>
-//#include <ArduinoLowPower.h>
-//#include <LowPower.h>
-//#include <RTCZero.h>
 #include <Adafruit_SleepyDog.h>
 
 
@@ -71,6 +68,13 @@ if (getDHTValues() == true) {
   txDHTValues();
 }
 
+//LoRa sleep mode 
+PRINTLN(">>> Set LoRa transceiver to sleep");
+Serial1.println("AT+LOWPOWER");
+readCString();
+
+
+
 now = millis();
 unsigned long McAwakeTime = now - timer;
 WRITE("Microcontroller awake time: ");
@@ -82,10 +86,11 @@ while (sleepTime > 0) {
   PRINT(sleepTime, DEC);
   WRITE(" milliseconds.\n");
   int sleepMS = Watchdog.sleep(sleepTime);
-  sleepTime = sleepTime - sleepMS;
+  WRITE("\n");
   WRITE("I'm awake now! I slept for ");
   PRINT(sleepMS, DEC);
   WRITE(" milliseconds.\n");
+  sleepTime = sleepTime - sleepMS;
 
 }
 
@@ -126,7 +131,7 @@ boolean initLoRa() {
   
   WRITE("\nInitiating UART port between M0-Pro and LoRa modem...");
   Serial1.begin(9600);
-  Serial1.setTimeout(2000); // every single readString takes this time 
+  Serial1.setTimeout(5000); // maximum TimeOut for readCstring(), readString() always exit with a TimeOut 
   WRITE(" [OK]\n");
 
   /* Not needed
@@ -358,6 +363,10 @@ boolean txDHTValues() {
   payload.concat(String(humidLow, HEX));
   payload.concat(String(humidHigh, HEX));
 
+  PRINTLN("\n Wake up if in sleep mode...");
+  Serial1.println("AT");
+  readCString();
+
   // Set LoRa port communication
   PRINTLN("\nSetting LoRa port...");
   at_cmd = "AT+PORT=";
@@ -371,7 +380,6 @@ boolean txDHTValues() {
   at_cmd.concat(payload);  
   at_cmd.concat("\"");
   Serial1.println(at_cmd);
-  Serial1.setTimeout(5000);  
   readCString();
   readCString();
   readCString();
