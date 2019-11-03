@@ -38,8 +38,7 @@ void printInitInfo();
 boolean initLoRa();
 boolean getDHTValues();
 boolean txDHTValues();
-//void serialEventRun(void);
-//void serialEvent1();
+char * readCString();
 
 void setup() {
   // Initiate serial terminal
@@ -118,7 +117,10 @@ void printInitInfo() {
  * \brief Initiate LoRa modem
  */
 boolean initLoRa() {
+
+  unsigned long initStart = millis();
   String at_cmd;
+  char * b;
 
   // Configure UART communication between M0-Pro and RHF76-052 LoRa modem 
   
@@ -127,105 +129,83 @@ boolean initLoRa() {
   Serial1.setTimeout(2000); // every single readString takes this time 
   WRITE(" [OK]\n");
 
+  /* Not needed
   // Reset RHF76-052 LoRa modem
   // After reset, 2s is required to POR cycle before commencing communications over UART
-  /* Not needed
   PRINTLN(">>> Reseting LoRa modem...");
   Serial1.println("AT+RESET");
-  delay(2000);  
-  loraReturn = Serial1.readString();
-  WRITE(loraReturn);
-  if (strcmp((char*)loraReturn.c_str(), "+RESET: OK\r\n") != 0) {
+  b = readCString();
+  if (strcmp((char*)b, "+RESET: OK\r") != 0) {
     return false;
   }
   */
 
- /* Not needed
+  /* Not needed
   // Check if RHF76-052 LoRa modem is OK
   PRINTLN(">>> Sending AT command...");
   Serial1.println("AT");
-  //delay(300);
-  loraReturn = Serial1.readString();
-  WRITE(loraReturn);
-  if (strcmp((char*)loraReturn.c_str(), "+AT: OK\r\n") != 0) {
+  b = readCString();
+  if (strcmp((char*)b, "+AT: OK\r") != 0) {
     return false;
   }
-*/
+  */
 
-  // Get firmware version of RHF76-052 LoRa modem
   /* Not needed
+  // Get firmware version of RHF76-052 LoRa modem
   PRINTLN(">>> Getting firmware version...");
   Serial1.println("AT+VER");
-  //delay(300);
-  loraReturn = Serial1.readString();
-  WRITE(loraReturn);
+  readCString();
   */
 
   // Set default configuration
   PRINTLN(">>> Setting default configuration...");
   Serial1.println("AT+FDEFAULT=RISINGHF");
-  //delay(500);
-  loraReturn = Serial1.readString();
-  if (strcmp((char*)loraReturn.c_str(), "+FDEFAULT: OK\r\n") != 0) {
-    WRITE(">>> Setting default configuration failed! : ");
-    WRITE(loraReturn.c_str());
+  b = readCString();
+  if (strcmp((char*)b, "+FDEFAULT: OK\r") != 0) {
+    WRITE(">>> Setting default configuration failed!");
     return false;
   }
-  PRINTLN(loraReturn);
 
   // Set frequency band 
   PRINTLN(">>> Setting frequency band...");
   at_cmd = "AT+DR=";
   at_cmd.concat(lora_band);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  //todo: test return
-  PRINTLN(loraReturn);
+  readCString();
 
   // Set channel 0 
   PRINTLN(">>> Setting channel 0...");
   at_cmd = "AT+CH=";
   at_cmd.concat(lora_channel0);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
+  readCString();
 
   // Set channel 1 
   PRINTLN(">>> Setting channel 1...");
   at_cmd = "AT+CH=";
   at_cmd.concat(lora_channel1);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
+  readCString();
 
   // Set DR
   PRINTLN(">>> Setting uplink DR (Data Rate)...");
   at_cmd = "AT+DR=";
   at_cmd.concat(lora_druplink);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
- 
+  readCString();
+  
   // Set RXWIN2
   PRINTLN(">>> Setting RXWIN2...");
   at_cmd = "AT+RXWIN2=";
   at_cmd.concat(lora_rxwin2);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
-
-  /*
+  readCString();
+  
+  /* Not Needed
   // Get DR scheme
   PRINTLN(">>> Getting DR schemme...");
   Serial1.println("AT+DR=?");
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
+  readCString();
   */
 
   // Set DevEui
@@ -234,9 +214,7 @@ boolean initLoRa() {
   at_cmd.concat(lora_deveui);
   at_cmd.concat("\"");
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
+  readCString();
 
   // Set AppEui
   PRINTLN(">>> Setting AppEui...");
@@ -244,17 +222,13 @@ boolean initLoRa() {
   at_cmd.concat(lora_appeui);
   at_cmd.concat("\"");
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
+  readCString();
 
   /*
   // Get ID parameters of RHF76-052 LoRa modem
   PRINTLN(">>> Getting DevAddr, DevEui and AppEui...");
   Serial1.println("AT+ID");
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn); 
+  readCString();
   */
 
   // Set LoRa transmission power
@@ -262,36 +236,28 @@ boolean initLoRa() {
   at_cmd = "AT+POWER=";
   at_cmd.concat(lora_txpower);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
+  readCString();
 
   // Set LoRa ADR (Automatic Data Rate)
   PRINTLN(">>> Setting ADR (Automatic Data Rate) mode...");
   at_cmd = "AT+ADR=";
   at_cmd.concat(lora_adr);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
-
+  readCString();
+  
   // Set Authentication mode
   PRINTLN(">>> Setting authentication mode...");
   at_cmd = "AT+MODE=";
   at_cmd.concat(lora_mode);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
-
+  readCString();
+  
   // Set CLASS mode
   PRINTLN(">>> Setting LoRa Class...");
   at_cmd = "AT+CLASS=";
   at_cmd.concat(lora_class);
   Serial1.println(at_cmd);
-  //delay(300);
-  loraReturn = Serial1.readString();
-  PRINTLN(loraReturn);
+  readCString();
   
   if (strcmp(lora_mode, "LWABP") == 0) {
     // Set DevAddr
@@ -300,30 +266,24 @@ boolean initLoRa() {
     at_cmd.concat(lora_devaddr);
     at_cmd.concat("\"");
     Serial1.println(at_cmd);
-    //delay(300);
-    loraReturn = Serial1.readString();
-    PRINTLN(loraReturn);
-
+    readCString();
+  
     // Set NwkSKey
     PRINTLN(">>> Setting NwkSKey...");
     at_cmd = "AT+KEY=NwkSKey,\"";
     at_cmd.concat(lora_nwkskey);
     at_cmd.concat("\"");
     Serial1.println(at_cmd);
-    //delay(300);
-    loraReturn = Serial1.readString();
-    PRINTLN(loraReturn);
-
+    readCString();
+    
     // Set AppSKey
     PRINTLN(">>> Setting AppSKey...");
     at_cmd = "AT+KEY=AppSKey,\"";
     at_cmd.concat(lora_appskey);
     at_cmd.concat("\"");
     Serial1.println(at_cmd);
-    //delay(300);
-    loraReturn = Serial1.readString();
-    PRINTLN(loraReturn);
-
+    readCString();
+    
   } else { // Authentication OTAA
     // Set AppKey
     PRINTLN(">>> Setting AppKey...");
@@ -331,17 +291,18 @@ boolean initLoRa() {
     at_cmd.concat(lora_appkey);
     at_cmd.concat("\"");
     Serial1.println(at_cmd);
-    //delay(300);
-    loraReturn = Serial1.readString();
-    PRINTLN(loraReturn);
-
+    readCString();
+    
     // Joining to LoRa network (via OTAA - Over The Air Authentication)
     PRINTLN(">>> Sending AT+Join");
     Serial1.println("AT+Join");
-    //delay(2000);
-    loraReturn = Serial1.readString();
-    PRINTLN(loraReturn);
+    readCString();
   }
+
+  unsigned long initEnd = millis();
+  WRITE("Lora initialization took : ");
+  PRINTLN(initEnd-initStart);
+  WRITE(" mS\n");
 
   return true;
 }
@@ -402,59 +363,26 @@ boolean txDHTValues() {
   at_cmd = "AT+PORT=";
   at_cmd.concat(lora_port_dht);
   Serial1.println(at_cmd);
-  //delay(300);  
-//  loraReturn = Serial1.readString();
-//  PRINTLN(loraReturn);
-  memset(strBuffer, 0, buffersz);
-  Serial1.readBytesUntil(termChar, strBuffer, buffersz);
-  PRINTLN(strBuffer);
+  readCString();
   
   // Sending data via RHF76-052 LoRa modem
   PRINTLN("\nSending unconfirmed data via LoRa...");
   at_cmd = "AT+MSGHEX=\"";
   at_cmd.concat(payload);  
   at_cmd.concat("\"");
-  //PRINTLN(at_cmd);
   Serial1.println(at_cmd);
-//  delay(5000);
   Serial1.setTimeout(5000);  
-  //loraReturn = Serial1.readString();
-  //PRINTLN(loraReturn);
-  memset(strBuffer, 0, buffersz);
-  Serial1.readBytesUntil(termChar, strBuffer, buffersz);
-  PRINTLN(strBuffer);
-  memset(strBuffer, 0, buffersz);
-  Serial1.readBytesUntil(termChar, strBuffer, buffersz);
-  PRINTLN(strBuffer);
-  memset(strBuffer, 0, buffersz);
-  Serial1.readBytesUntil(termChar, strBuffer, buffersz);
-  PRINTLN(strBuffer);
-  
-  
+  readCString();
+  readCString();
+  readCString();
   return true;
 }
 
-/*
-void serialEventRun(void) {
-  if (Serial1.available()) serialEvent1();
-}
-
-void serialEvent1() {
-  while (Serial1.available()) {
-    loraReturn = Serial1.readString();
-    Serial.print(loraReturn);
-  }
-}
-*/
-
-void serialEvent() {
-  PRINTLN(">>>>>>>>>>Serial Event\n");
-}
-
-void serialEvent1() {
-  PRINTLN(">>>>>>>>>>Serial Event 1 \n");
-}
-
-void serialEvent2() {
-  PRINTLN(">>>>>>>>>>Serial Event 2 \n");
+char * readCString() {
+  const int buffsz = 64;
+  static char buff[buffsz];
+  memset(buff, 0, buffsz);
+  Serial1.readBytesUntil('\n', buff, buffsz);
+  PRINTLN(buff);
+  return buff;
 }
