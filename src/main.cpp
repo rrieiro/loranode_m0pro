@@ -78,7 +78,7 @@ readCString();
 now = millis();
 unsigned long McAwakeTime = now - timer;
 WRITE("Microcontroller awake time: ");
-SerialUSB.print(McAwakeTime); //4014ms
+SerialUSB.print(McAwakeTime); //3150ms
 WRITE(" mS\n");
 long sleepTime = (unsigned long)DHT_PERIOD - McAwakeTime;
 while (sleepTime > 0) {
@@ -363,7 +363,7 @@ boolean txDHTValues() {
   payload.concat(String(humidLow, HEX));
   payload.concat(String(humidHigh, HEX));
 
-  PRINTLN("\n Wake up if in sleep mode...");
+  PRINTLN("\n Wake up LoRa if in sleep mode...");
   Serial1.println("AT");
   readCString();
 
