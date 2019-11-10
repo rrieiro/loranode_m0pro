@@ -3,10 +3,13 @@
 #include <util.h>
 #include <DHT_U.h>
 #include <Adafruit_SleepyDog.h>
-
+#include <ArduinoLowPower.h>
 
 #define DEBUGINFO 1
 #define PRINTTIME 1
+#define TYPICALMCAWAKETIME 3150 
+#define DUMMY 1
+#define USEARDUINOLOWPOWER 1
 
 #define PRINTERROR(...) SerialUSB.println(__VA_ARGS__)
 
@@ -41,6 +44,9 @@ char * readCString();
 void setup() {
   // Initiate serial terminal
   Serial.begin(SERIAL_BAUDRATE);
+  //SerialUSB.begin(SERIAL_BAUDRATE);
+
+#ifndef DUMMY
 
   // Print initial information
   printInitInfo();
@@ -52,6 +58,8 @@ void setup() {
   if ((initialized = initLoRa()) == false) {
     PRINTERROR("\n>>> ERROR initiating LoRa modem!!!");
   }
+
+#endif
 }
 
 void loop() {
@@ -62,6 +70,8 @@ timer = now; // loop start time
 WRITE("*************************\n");
 WRITE("* Loop Started          *\n");
 WRITE("*************************\n");
+
+#ifndef DUMMY
 
 // Get DHT sensor values
 if (getDHTValues() == true) {
@@ -86,12 +96,24 @@ PRINTLN(">>> Set LoRa transceiver to sleep");
 Serial1.println("AT+LOWPOWER");
 readCString();
 
+#else
+
+  SerialUSB.println("IN DUMMY MODE ");
+  now = millis();
+  while ((now-timer) < TYPICALMCAWAKETIME) {
+    now = millis();
+    delay(10);
+  }
+
+#endif
+
 now = millis();
 unsigned long McAwakeTime = now - timer;
 #ifdef PRINTTIME
 SerialUSB.print("Microcontroller awake time: ");
 SerialUSB.println(McAwakeTime); //3150ms
 #endif
+
 
 long sleepTime = (unsigned long)DHT_PERIOD - McAwakeTime;
 while (sleepTime > 0) {
@@ -104,6 +126,7 @@ while (sleepTime > 0) {
   PRINT(sleepMS, DEC);
   WRITE(" milliseconds.\n");
   sleepTime = sleepTime - sleepMS;
+ 
 
 }
 
