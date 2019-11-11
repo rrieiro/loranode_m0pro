@@ -33,6 +33,7 @@ bool initialized = false;
 const int buffersz = 64;
 char strBuffer[buffersz];
 const char termChar = '\n'; 
+long int repetitions=0;
 
 // Funtion prototypes
 void printInitInfo();
@@ -40,6 +41,7 @@ boolean initLoRa();
 boolean getDHTValues();
 boolean txDHTValues();
 char * readCString();
+void repetitionsIncrease();
 
 void setup() {
   // Initiate serial terminal
@@ -116,6 +118,7 @@ SerialUSB.println(McAwakeTime); //3150ms
 
 
 long sleepTime = (unsigned long)DHT_PERIOD - McAwakeTime;
+#ifndef USEARDUINOLOWPOWER
 while (sleepTime > 0) {
   WRITE("Will sleep for ");
   PRINT(sleepTime, DEC);
@@ -126,11 +129,30 @@ while (sleepTime > 0) {
   PRINT(sleepMS, DEC);
   WRITE(" milliseconds.\n");
   sleepTime = sleepTime - sleepMS;
- 
+}
+#else
+
+WRITE("Will sleep for ");
+PRINT(sleepTime, DEC);
+WRITE(" milliseconds.\n");
+
+LowPower.sleep((int)sleepTime);
+//int pin = 9;
+//pinMode(pin, INPUT_PULLUP);
+  // Attach a wakeup interrupt on pin 9, calling repetitionsIncrease when the device is woken up
+//LowPower.attachInterruptWakeup(pin, repetitionsIncrease, CHANGE);
+
+#endif
 
 }
 
+void repetitionsIncrease() {
+  // This function will be called once on device wakeup
+  // You can do some little operations here (like changing variables which will be used in the loop)
+  // Remember to avoid calling delay() and long running functions since this functions executes in interrupt context
+  repetitions++;
 }
+
 
 /**
  * \fn    printInitInfo
