@@ -3,13 +3,14 @@
 #include <util.h>
 #include <DHT_U.h>
 #include <Adafruit_SleepyDog.h>
+#include <RTCZero.h>
 #include <ArduinoLowPower.h>
 
 #define DEBUGINFO 1
 #define PRINTTIME 1
 #define TYPICALMCAWAKETIME 3150 
 #define DUMMY 1
-#define USEARDUINOLOWPOWER 1
+//#define USEARDUINOLOWPOWER 1
 
 #define PRINTERROR(...) SerialUSB.println(__VA_ARGS__)
 
@@ -41,12 +42,34 @@ boolean initLoRa();
 boolean getDHTValues();
 boolean txDHTValues();
 char * readCString();
-void repetitionsIncrease();
+
+#ifdef USEARDUINOLOWPOWER
+const byte seconds = 0;
+const byte minutes = 0;
+const byte hours = 0;
+
+RTCZero rtc;
+void alarmCallback();
+
+#endif
+
 
 void setup() {
   // Initiate serial terminal
   Serial.begin(SERIAL_BAUDRATE);
   //SerialUSB.begin(SERIAL_BAUDRATE);
+
+#ifdef USEARDUINOLOWPOWER
+
+rtc.begin();
+rtc.setTime(hours, minutes, seconds);
+rtc.setAlarmTime(17, 00, 10);
+rtc.enableAlarm(rtc.MATCH_SS);
+rtc.attachInterrupt(alarmCallback);
+
+
+#endif
+
 
 #ifndef DUMMY
 
@@ -79,16 +102,16 @@ WRITE("*************************\n");
 if (getDHTValues() == true) {
   #ifdef PRINTTIME
   now = millis();
-  SerialUSB.print("Data aquired time : ");
-  SerialUSB.println(now - timer);
+  PRINT("Data aquired time : ");
+  PRINTLN(now - timer);
   #endif
 
   // Create payload and transmit
   txDHTValues();
   #ifdef PRINTTIME
   now = millis();
-  SerialUSB.print("Data transmitted time : ");
-  SerialUSB.println(now - timer);
+  PRINT("Data transmitted time : ");
+  PRINTLN(now - timer);
   #endif
 
 }
@@ -100,7 +123,7 @@ readCString();
 
 #else
 
-  SerialUSB.println("IN DUMMY MODE ");
+  PRINTLN("IN DUMMY MODE ");
   now = millis();
   while ((now-timer) < TYPICALMCAWAKETIME) {
     now = millis();
@@ -112,8 +135,8 @@ readCString();
 now = millis();
 unsigned long McAwakeTime = now - timer;
 #ifdef PRINTTIME
-SerialUSB.print("Microcontroller awake time: ");
-SerialUSB.println(McAwakeTime); //3150ms
+PRINT("Microcontroller awake time: ");
+PRINTLN(McAwakeTime); //3150ms
 #endif
 
 
@@ -136,22 +159,34 @@ WRITE("Will sleep for ");
 PRINT(sleepTime, DEC);
 WRITE(" milliseconds.\n");
 
-LowPower.sleep((int)sleepTime);
+/////////////////////////////
+/* Change these values to set the current initial time */
+
+rtc.standbyMode();
+
+/////////////////////////////
+//LowPower.sleep((int)sleepTime);
+/////////////////////////////
 //int pin = 9;
 //pinMode(pin, INPUT_PULLUP);
-  // Attach a wakeup interrupt on pin 9, calling repetitionsIncrease when the device is woken up
-//LowPower.attachInterruptWakeup(pin, repetitionsIncrease, CHANGE);
-
+// Attach a wakeup interrupt on pin 9, calling alarmCallback when the device is woken up
+//LowPower.attachInterruptWakeup(pin, alarmCallback, CHANGE);
+/////////////////////////////
 #endif
 
 }
 
-void repetitionsIncrease() {
+#ifdef USEARDUINOLOWPOWER
+
+void alarmCallback() {
   // This function will be called once on device wakeup
   // You can do some little operations here (like changing variables which will be used in the loop)
   // Remember to avoid calling delay() and long running functions since this functions executes in interrupt context
   repetitions++;
+  WRITE("\n ALARM! \n");
 }
+
+#endif
 
 
 /**
@@ -367,8 +402,8 @@ boolean initLoRa() {
 
   #ifdef PRINTTIME
   unsigned long initEnd = millis();
-  SerialUSB.print("Lora initialization took : ");
-  SerialUSB.println(initEnd-initStart);
+  PRINT("Lora initialization took : ");
+  PRINTLN(initEnd-initStart);
   #endif
 
   return true;
